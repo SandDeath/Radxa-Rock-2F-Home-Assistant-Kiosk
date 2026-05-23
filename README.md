@@ -55,7 +55,7 @@ After reboot you should see the Cinnamon desktop login screen.
 
 ```bash
 # Clone or download the setup script
-wget https://your-repo/setup.sh
+wget [https://your-repo/setup.sh](https://github.com/SandDeath/Radxa-Rock-2F-Home-Assistant-Kiosk/blob/main/main-setup-script.sh)
 
 # Run with your network settings
 HA_IP=192.168.1.50 MQTT_IP=192.168.1.1 bash setup.sh
