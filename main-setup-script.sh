@@ -338,13 +338,13 @@ find ${KIOSK_HOME}/.config/chromium -name "SingletonLock" -delete 2>/dev/null
 find /root/.config/chromium -name "SingletonLock" -delete 2>/dev/null
 
 while true; do
-    # Очистка lock-файлов перед каждым запуском
+    # Clear lock-file after run
     find /home/rock2f/.config/chromium -name "SingletonLock" -delete 2>/dev/null
     find /root/.config/chromium -name "SingletonLock" -delete 2>/dev/null
 
     /usr/bin/chromium "${FLAGS[@]}"
 
-    # Если Chromium упал — подождать и перезапустить
+    # If Chromium crashes, wait and restart.
     EXIT_CODE=$?
     log "Chromium exited with code ${EXIT_CODE}, restarting in 3s..."
     sleep 3
