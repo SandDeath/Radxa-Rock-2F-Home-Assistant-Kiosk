@@ -282,6 +282,9 @@ gsettings set org.cinnamon.desktop.screensaver lock-enabled false 2>/dev/null ||
 gsettings set org.cinnamon.desktop.screensaver idle-activation-enabled false 2>/dev/null || true
 gsettings set org.cinnamon.settings-daemon.plugins.power sleep-display-ac 0 2>/dev/null || true
 
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> /var/log/kiosk-start.log
+}
 FLAGS=(
     # ---- Kiosk mode -----------------------------------------------------
     --kiosk
@@ -334,7 +337,18 @@ FLAGS=(
 find ${KIOSK_HOME}/.config/chromium -name "SingletonLock" -delete 2>/dev/null
 find /root/.config/chromium -name "SingletonLock" -delete 2>/dev/null
 
-exec /usr/bin/chromium "\${FLAGS[@]}"
+while true; do
+    # Очистка lock-файлов перед каждым запуском
+    find /home/rock2f/.config/chromium -name "SingletonLock" -delete 2>/dev/null
+    find /root/.config/chromium -name "SingletonLock" -delete 2>/dev/null
+
+    /usr/bin/chromium "${FLAGS[@]}"
+
+    # Если Chromium упал — подождать и перезапустить
+    EXIT_CODE=$?
+    log "Chromium exited with code ${EXIT_CODE}, restarting in 3s..."
+    sleep 3
+done
 EOF
 
 # --- mqtt-telemetry.sh ---
@@ -716,6 +730,17 @@ sleep-display-ac=0
 idle-dim-time=0
 EOF
 dconf update 2>/dev/null || true
+su - "${KIOSK_USER}" -c "DISPLAY=:0 XAUTHORITY=${KIOSK_HOME}/.Xauthority \
+    killall cinnamon-screensaver 2>/dev/null || true"
+
+cat > "${AUTOSTART_DIR}/no-screensaver.desktop" << EOF
+[Desktop Entry]
+Type=Application
+Name=Disable Screensaver
+Exec=bash -c 'killall cinnamon-screensaver 2>/dev/null; xset s off; xset s noblank; xset -dpms'
+X-GNOME-Autostart-enabled=true
+EOF
+chown "${KIOSK_USER}:${KIOSK_USER}" "${AUTOSTART_DIR}/no-screensaver.desktop"
 log_info "Screensaver and lock screen disabled."
 
 # =============================================================================
