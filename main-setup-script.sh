@@ -1,25 +1,13 @@
 #!/bin/bash
 # =============================================================================
 #  Rock 2F HA Kiosk — Master Setup Script
-#  Version 1.0
+#  Version 1.1 (Cinnamon & Chromium GPU Fix Included)
 #
 #  Tested on:
-#    Board:    Radxa Rock 2F (Rockchip RK3528)
-#    OS:       Armbian Ubuntu Noble (24.04)
-#    Display:  13.3" 1920x1080 HDMI+USB Touchscreen
-#    DE:       Cinnamon (minimal)
-#
-#  What this script does:
-#    - Creates/validates kiosk user
-#    - Installs all required packages
-#    - Configures Chromium kiosk autostart
-#    - Configures MQTT telemetry agent
-#    - Sets up CPU/GPU/DMC frequency floors
-#    - Configures autologin via LightDM
-#    - Disables screensaver and screen lock
-#    - Sets up VNC remote access
-#    - Configures HDMI audio
-#    - Creates udev rule for touchscreen mapping
+#     Board:    Radxa Rock 2F (Rockchip RK3528)
+#     OS:       Armbian Ubuntu Noble (24.04)
+#     Display:  13.3" 1920x1080 HDMI+USB Touchscreen
+#     DE:       Cinnamon (minimal)
 # =============================================================================
 
 set -euo pipefail
@@ -56,7 +44,7 @@ fi
 clear
 echo -e "${BOLD}${CYAN}"
 cat << 'EOF'
-  ____            _      ____  _____   _  ___           _    
+  ____            _      ____  _____   _  ___           _   
  |  _ \ __ _  __| |_  _|  _ \|  ___| | |/ (_)___  ___| | __
  | |_) / _` |/ _` \ \/ / |_) | |_    | ' /| / _ \/ __| |/ /
  |  _ < (_| | (_| |>  <|  _ <|  _|   | . \| | (_) \__ \   < 
@@ -76,7 +64,7 @@ echo -e "${NC}"
 log_section "Configuration"
 
 # --- Network ---
-HA_IP="${HA_IP:-192.168.1.100}"
+HA_IP="${HA_IP:-192.168.98.46}"
 HA_PORT="${HA_PORT:-8123}"
 MQTT_IP="${MQTT_IP:-192.168.1.100}"
 MQTT_PORT="${MQTT_PORT:-1883}"
@@ -148,6 +136,8 @@ log_section "Step 2 — Installing Packages"
 apt-get update -qq
 
 PACKAGES=(
+    cinnamon-core           # Desktop Environment core components
+    lightdm                 # Display manager
     chromium                # Kiosk browser (deb, not snap)
     mosquitto-clients       # MQTT publish/subscribe
     jq                      # JSON processing for CDP URL reading
@@ -294,11 +284,9 @@ FLAGS=(
     --no-first-run
     --disable-restore-session-state
 
-    # ---- GPU: thermal balance -------------------------------------------
-    # Mali-G52 MC1 is a small GPU. CPU rasterization is more thermally
-    # efficient for a mostly-static HA dashboard.
-    # Removed: --enable-gpu-rasterization, --ignore-gpu-blocklist,
-    #          --enable-zero-copy, --use-gl=egl (not needed under X11)
+    # ---- GPU Fixes for Updated Chromium Engines --------------------------
+    --disable-gpu
+    --use-gl=swiftshader
 
     # ---- Background activity --------------------------------------------
     --disable-background-networking
@@ -596,9 +584,9 @@ while true; do
       --argjson mem     "$MEM"     \
       --argjson disk    "$DISK"    \
       --argjson updates "$UPDATES" \
-      --arg     uptime  "$UPTIME"  \
-      --arg     ip      "$IP"      \
-      --arg     url     "$CURRENT_URL" \
+      --arg      uptime  "$UPTIME"  \
+      --arg      ip      "$IP"      \
+      --arg      url     "$CURRENT_URL" \
       '{temp:$temp,cpu:$cpu,mem:$mem,disk:$disk,updates:$updates,uptime:$uptime,ip:$ip,url:$url}')
 
     mqtt_pub "$STATE_TOPIC" "$PAYLOAD"
@@ -624,9 +612,10 @@ log_section "Step 7 — Log Files"
 
 touch "${LOG_DIR}/rock2f-mqtt.log"
 touch "${LOG_DIR}/x11vnc.log"
+chmod 664 "${LOG_DIR}/rock2f-mqtt.log" "${LOG_DIR}/x11vnc.log"
 chown "${KIOSK_USER}:${KIOSK_USER}" "${LOG_DIR}/rock2f-mqtt.log"
 chown "${KIOSK_USER}:${KIOSK_USER}" "${LOG_DIR}/x11vnc.log"
-log_info "Log files created."
+log_info "Log files created and permissions fixed."
 
 # =============================================================================
 #  STEP 8 — AUTOSTART
@@ -685,8 +674,9 @@ cat > /etc/lightdm/lightdm.conf.d/autologin.conf << EOF
 [Seat:*]
 autologin-user=${KIOSK_USER}
 autologin-user-timeout=0
+user-session=cinnamon
 EOF
-log_info "Autologin configured for: ${KIOSK_USER}"
+log_info "Autologin configured for: ${KIOSK_USER} (Session: Cinnamon)"
 
 # =============================================================================
 #  STEP 10 — SUDOERS
@@ -761,9 +751,9 @@ echo ""
 echo -e "  ${YELLOW}HA MQTT Integration:${NC}"
 echo -e "  Add to configuration.yaml:"
 echo -e "  ${CYAN}mqtt:${NC}"
-echo -e "  ${CYAN}  broker: ${MQTT_IP}${NC}"
-echo -e "  ${CYAN}  port: ${MQTT_PORT}${NC}"
-echo -e "  ${CYAN}  discovery: true${NC}"
+echo -e "  ${CYAN}    broker: ${MQTT_IP}${NC}"
+echo -e "  ${CYAN}    port: ${MQTT_PORT}${NC}"
+echo -e "  ${CYAN}    discovery: true${NC}"
 echo ""
 echo -e "  ${BOLD}Reboot to apply all settings:${NC}"
 echo -e "  ${CYAN}systemctl reboot${NC}"
