@@ -64,7 +64,7 @@ echo -e "${NC}"
 log_section "Configuration"
 
 # --- Network ---
-HA_IP="${HA_IP:-192.168.98.46}"
+HA_IP="${HA_IP:-192.168.1.100}"
 HA_PORT="${HA_PORT:-8123}"
 MQTT_IP="${MQTT_IP:-192.168.1.100}"
 MQTT_PORT="${MQTT_PORT:-1883}"
