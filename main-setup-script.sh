@@ -686,7 +686,7 @@ EOF
 cat > /etc/systemd/system/mqtt-telemetry.service << EOF
 [Unit]
 Description=MQTT Telemetry Agent (Rock 2F Panel)
-After=network-online.target graphical.target
+After=network-online.target
 Wants=network-online.target
 
 [Service]
@@ -698,7 +698,7 @@ Restart=always
 RestartSec=10
 
 [Install]
-WantedBy=graphical.target
+WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
 systemctl enable mqtt-telemetry.service
