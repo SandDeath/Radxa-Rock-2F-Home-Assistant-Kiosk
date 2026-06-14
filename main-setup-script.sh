@@ -229,7 +229,7 @@ ExecStart=/bin/bash -c '\
     for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq; do \
         echo ${MIN_FREQ} > "\$cpu" 2>/dev/null || true; \
     done; \
-    echo ${GPU_MIN_FREQ} > /sys/class/devfreq/${GPU_DEV:-ff700000.gpu}/min_freq 2>/dev/null || true; \
+    echo 800000000 > /sys/class/devfreq/ff700000.gpu/min_freq 2>/dev/null || true; \
     echo ${DMC_MIN_FREQ} > /sys/class/devfreq/dmc/min_freq 2>/dev/null || true'
 RemainAfterExit=yes
 
@@ -340,6 +340,7 @@ FLAGS=(
 
     --autoplay-policy=no-user-gesture-required
 
+    --num-raster-threads=4
     --use-gl=angle
     --use-angle=swiftshader
     --remote-debugging-port=9222
@@ -655,6 +656,26 @@ sed -i "s|__KIOSK_UID__|${KIOSK_UID}|g" "${SCRIPTS_DIR}/start-panel.sh"
 chmod +x "${SCRIPTS_DIR}/start-panel.sh"
 chmod +x "${SCRIPTS_DIR}/mqtt-telemetry.sh"
 log_info "Scripts written to ${SCRIPTS_DIR}/"
+
+
+# =============================================================================
+#  STEP 6b — XORG RESOLUTION (1280x720, 16bpp for SwiftShader performance)
+# =============================================================================
+log_section "Step 6b — Xorg Resolution"
+
+mkdir -p /etc/X11/xorg.conf.d
+cat > /etc/X11/xorg.conf.d/10-kiosk.conf << 'XORGEOF'
+Section "Screen"
+  Identifier "Screen0"
+  DefaultDepth 16
+  SubSection "Display"
+    Depth 16
+    Modes "1280x720"
+  EndSubSection
+EndSection
+XORGEOF
+log_info "Xorg set to 1280x720 @ 16bpp (SwiftShader on RK3528 is 2x faster vs 1080p)."
+log_info "To restore 1080p: edit /etc/X11/xorg.conf.d/10-kiosk.conf and restart lightdm."
 
 # =============================================================================
 #  STEP 7 — LOG FILES
