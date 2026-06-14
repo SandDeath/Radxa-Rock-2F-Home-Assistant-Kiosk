@@ -340,6 +340,8 @@ FLAGS=(
 
     --autoplay-policy=no-user-gesture-required
 
+    --use-gl=angle
+    --use-angle=swiftshader
     --remote-debugging-port=9222
     --remote-debugging-address=127.0.0.1
 
