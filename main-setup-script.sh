@@ -267,6 +267,14 @@ cat > "${SCRIPTS_DIR}/start-panel.sh" << 'PANELEOF'
 # =============================================================================
 
 LOG_FILE="/var/log/kiosk-start.log"
+LOCK_FILE="/tmp/kiosk-start.lock"
+
+# Single-instance guard — autostart may fire multiple times after lightdm restart
+if [ -e "$LOCK_FILE" ] && kill -0 "$(cat $LOCK_FILE)" 2>/dev/null; then
+    exit 0
+fi
+echo $$ > "$LOCK_FILE"
+trap "rm -f $LOCK_FILE" EXIT
 
 log() {
     local msg="[$(date '+%Y-%m-%d %H:%M:%S')] [KIOSK] $*"
