@@ -348,9 +348,7 @@ FLAGS=(
 
     --autoplay-policy=no-user-gesture-required
 
-    --num-raster-threads=4
-    --use-gl=angle
-    --use-angle=swiftshader
+    --disable-gpu
     --remote-debugging-port=9222
     --remote-debugging-address=127.0.0.1
 
@@ -666,24 +664,6 @@ chmod +x "${SCRIPTS_DIR}/mqtt-telemetry.sh"
 log_info "Scripts written to ${SCRIPTS_DIR}/"
 
 
-# =============================================================================
-#  STEP 6b — XORG RESOLUTION (1280x720, 16bpp for SwiftShader performance)
-# =============================================================================
-log_section "Step 6b — Xorg Resolution"
-
-mkdir -p /etc/X11/xorg.conf.d
-cat > /etc/X11/xorg.conf.d/10-kiosk.conf << 'XORGEOF'
-Section "Screen"
-  Identifier "Screen0"
-  DefaultDepth 16
-  SubSection "Display"
-    Depth 16
-    Modes "1280x720"
-  EndSubSection
-EndSection
-XORGEOF
-log_info "Xorg set to 1280x720 @ 16bpp (SwiftShader on RK3528 is 2x faster vs 1080p)."
-log_info "To restore 1080p: edit /etc/X11/xorg.conf.d/10-kiosk.conf and restart lightdm."
 
 # =============================================================================
 #  STEP 7 — LOG FILES
